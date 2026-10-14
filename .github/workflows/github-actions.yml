@@ -95,34 +95,58 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # -------------------------------------------------------------------------
+  # JOB 3: DEPLOY (DESACTIVADO — sin servidor remoto configurado)
+  # -------------------------------------------------------------------------
+  # Para activarlo en el futuro:
+  #   1. Conseguir un servidor con Docker + docker-compose instalados.
+  #   2. Generar par de claves SSH:
+  #        ssh-keygen -t ed25519 -C "github-actions" -f ~/.ssh/gh_actions -N ""
+  #   3. Copiar la clave pública al servidor:
+  #        ssh-copy-id -i ~/.ssh/gh_actions.pub usuario@IP_SERVIDOR
+  #   4. Crear en GitHub → Settings → Secrets and variables → Actions:
+  #        SSH_HOST         = IP o hostname del servidor
+  #        SSH_USER         = usuario SSH
+  #        SSH_PRIVATE_KEY  = contenido de ~/.ssh/gh_actions (clave privada)
+  #   5. Cambiar `if: false` por:
+  #        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+  #   6. Quitar el comentario de los pasos marcados con "# DEPLOY-ACTIVO".
+  #
   deploy:
-    name: "Deploy a Runtime"
+    name: "Deploy a Runtime (DESACTIVADO)"
     runs-on: ubuntu-latest
     needs: docker-build
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    if: false                    # <-- DESACTIVADO: sin servidor remoto
+
+    # environment:
+    #   name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/app
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            docker compose down
-            docker compose up -d --remove-orphans
-            docker image prune -f
+      # - name: Deploy via SSH                              # DEPLOY-ACTIVO
+      #   uses: appleboy/ssh-action@v1                      # DEPLOY-ACTIVO
+      #   with:                                             # DEPLOY-ACTIVO
+      #     host: ${{ secrets.SSH_HOST }}                   # DEPLOY-ACTIVO
+      #     username: ${{ secrets.SSH_USER }}               # DEPLOY-ACTIVO
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}             # DEPLOY-ACTIVO
+      #     script: |                                       # DEPLOY-ACTIVO
+      #       cd /opt/app                                   # DEPLOY-ACTIVO
+      #       docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      #       docker compose down                           # DEPLOY-ACTIVO
+      #       docker compose up -d --remove-orphans         # DEPLOY-ACTIVO
+      #       docker image prune -f                         # DEPLOY-ACTIVO
 
-      - name: Notificar resultado
+      - name: Reporte final del pipeline
         if: always()
         run: |
-          STATUS="${{ job.status }}"
-          BRANCH="${{ github.ref_name }}"
-          COMMIT="${{ github.sha }}"
-          echo "Deploy ${STATUS} en ${BRANCH} @ ${COMMIT:0:7}"
+          echo "=================================================="
+          echo " Pipeline CI/CD finalizado"
+          echo " Branch : ${{ github.ref_name }}"
+          echo " Commit : ${{ github.sha }}"
+          echo " Estado : ${{ job.status }}"
+          echo " Imagen : ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "=================================================="
+          echo "NOTA: El job de deploy está desactivado."
+          echo "      Solo se ejecutan tests + build + push a GHCR."
