@@ -1,0 +1,14 @@
+services:
+  app:
+    image: ghcr.io/PoolCI/ci-cd-demo-python:latest
+    container_name: ci-cd-demo-python
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
