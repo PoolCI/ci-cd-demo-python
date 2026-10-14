@@ -1,0 +1,21 @@
+# Plantilla de docker-compose para despliegue MANUAL en servidor.
+# El pipeline actual NO lo usa (job deploy desactivado).
+# Cuando tengas servidor:
+#   1. Copia este archivo a /opt/app/ del servidor.
+#   2. Ejecuta: docker compose up -d
+#   3. Activa el job `deploy` en el workflow.
+
+services:
+  app:
+    image: ghcr.io/PoolCI/ci-cd-demo-python:latest
+    container_name: ci-cd-demo-python
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
